@@ -16,13 +16,7 @@ struct RootView: View {
             if auth.isAuthenticated {
                 ContentView()
             } else {
-                NavigationStack {
-                    VStack(spacing: 24) {
-                        LoginView(onSignupTapped: { showSignup = true })
-                    }
-                    .padding()
-                    .navigationTitle("Welcome")
-                }
+                LoginView(onSignupTapped: { showSignup = true })
                 .sheet(isPresented: $showSignup) {
                     SignupView(onSignedIn: { showSignup = false })
                 }
