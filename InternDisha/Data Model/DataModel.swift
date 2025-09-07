@@ -83,6 +83,12 @@ struct Company: Identifiable, Codable {
 
 // MARK: - Internship
 
+enum InternshipStatus: String, Codable, CaseIterable {
+    case applied = "Applied"
+    case offerReceived = "Offer Received"
+    case offerAccepted = "Offer Accepted"
+}
+
 struct Internship: Identifiable, Codable {
     let id: UUID
     var title: String
@@ -95,4 +101,10 @@ struct Internship: Identifiable, Codable {
     var requiredSkills: [Skill]
     // Optional acceptable fields-of-study for this internship
     var acceptedFieldsOfStudy: [FieldOfStudy]? = nil
+    
+    // Status for tracking application progress
+    var status: InternshipStatus? = nil
+    
+    // Flag to track if the internship is saved by the user
+    var isSaved: Bool = false
 }
