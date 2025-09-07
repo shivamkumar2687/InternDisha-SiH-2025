@@ -8,15 +8,18 @@
 import SwiftUI
 
 struct ContentView: View {
+    @StateObject private var internshipViewModel = InternshipViewModel()
     var body: some View {
         TabView{
             InternshipView()
+                .environmentObject(internshipViewModel)
                 .tabItem{
-                    Label("Internship", systemImage: "person.crop.circle")
+                    Label("Internship", systemImage: "briefcase")
                 }
             MyInternshipView()
+                .environmentObject(internshipViewModel)
                 .tabItem {
-                    Label("My Internship", systemImage: "person.crop.circle")
+                    Label("My Internship", systemImage: "heart")
                 }
             ProfileView()
                 .tabItem {

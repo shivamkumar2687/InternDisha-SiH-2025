@@ -57,6 +57,7 @@ struct UserDefaultsStorage {
 enum PersistenceKeys {
     static let users = "persist.users"
     static let currentUser = "persist.currentUser"
+    static let appliedInternships = "persist.appliedInternships"
 }
 
 

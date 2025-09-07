@@ -18,7 +18,7 @@ enum Qualification: String, Codable, CaseIterable {
     case masters = "Masters"
 }
 
-struct Skill: Identifiable, Codable{
+struct Skill: Identifiable, Codable, Hashable{
     let id: UUID
     let name: String
 }

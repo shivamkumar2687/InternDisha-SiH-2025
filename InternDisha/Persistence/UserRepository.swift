@@ -12,6 +12,10 @@ protocol UserRepositoryProtocol {
     func saveUsers(_ users: [User])
     func loadCurrentUser() -> User?
     func saveCurrentUser(_ user: User?)
+    func loadAppliedInternships() -> [Internship]
+    func saveAppliedInternships(_ internships: [Internship])
+    func addAppliedInternship(_ internship: Internship)
+    func removeAppliedInternship(_ internship: Internship) -> Bool
 }
 
 struct UserRepository: UserRepositoryProtocol {
@@ -39,6 +43,33 @@ struct UserRepository: UserRepositoryProtocol {
         } else {
             storage.delete(forKey: PersistenceKeys.currentUser)
         }
+    }
+    
+    func loadAppliedInternships() -> [Internship] {
+        storage.load([Internship].self, forKey: PersistenceKeys.appliedInternships) ?? []
+    }
+    
+    func saveAppliedInternships(_ internships: [Internship]) {
+        storage.save(internships, forKey: PersistenceKeys.appliedInternships)
+    }
+    
+    func addAppliedInternship(_ internship: Internship) {
+        var internships = loadAppliedInternships()
+        // Check if internship already exists to avoid duplicates
+        if !internships.contains(where: { $0.id == internship.id }) {
+            internships.append(internship)
+            saveAppliedInternships(internships)
+        }
+    }
+    
+    func removeAppliedInternship(_ internship: Internship) -> Bool {
+        var internships = loadAppliedInternships()
+        if let index = internships.firstIndex(where: { $0.id == internship.id }) {
+            internships.remove(at: index)
+            saveAppliedInternships(internships)
+            return true
+        }
+        return false
     }
 }
 
