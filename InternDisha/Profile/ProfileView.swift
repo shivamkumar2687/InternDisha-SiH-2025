@@ -14,6 +14,27 @@ struct ProfileView: View {
         Group {
             if let user = auth.currentUser {
                 Form {
+                    Section {
+                        VStack(spacing: 16) {
+                            // Profile Icon
+                            Image(systemName: "person.circle.fill")
+                                .font(.system(size: 80))
+                                .foregroundColor(.blue)
+                            
+                            // User Name
+                            Text("\(user.firstName) \(user.lastName)")
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                            
+                            // User Email
+                            Text(user.email)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 20)
+                    }
+                    
                     Section(header: Text("Personal Information")) {
                         HStack { Text("Name"); Spacer(); Text("\(user.firstName) \(user.lastName)").foregroundColor(.secondary) }
                         HStack { Text("Date of Birth"); Spacer(); Text(formatted(date: user.dateOfBirth)).foregroundColor(.secondary) }

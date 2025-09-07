@@ -24,118 +24,172 @@ struct SignupView: View {
     @State private var selectedArea: Area? = SectorDummy.all.first?.areas.first
     @State private var selectedLocations: Set<UUID> = []
 
+    // Search states
+    @State private var skillsSearchText: String = ""
+    @State private var locationsSearchText: String = ""
+    
+    // Multi-step form state
+    @State private var currentStep: Int = 1
+    private let totalSteps: Int = 4
+
     var onSignedIn: () -> Void
 
     var body: some View {
+        NavigationView {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Create Account")
-                    .font(.largeTitle).bold()
-
-                if let error = auth.authError {
+                VStack(spacing: 0) {
+                    // Header Section
+                    VStack(spacing: 8) {
+                        Text("Create Account")
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                            .multilineTextAlignment(.center)
+                        
+                        Text("Join InternDisha and start your journey")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                        
+                        // Progress Indicator
+                        ProgressView(value: Double(currentStep), total: Double(totalSteps))
+                            .progressViewStyle(LinearProgressViewStyle(tint: .accentColor))
+                            .scaleEffect(x: 1, y: 2, anchor: .center)
+                            .padding(.top, 16)
+                        
+                        Text("Step \(currentStep) of \(totalSteps)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(.top, 4)
+                    }
+                    .padding(.top, 20)
+                    .padding(.horizontal, 32)
+                    .padding(.bottom, 30)
+                    
+                    // Error Message
+                    if let error = auth.authError, !error.isEmpty {
+                        HStack {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundColor(.red)
+                                .font(.caption)
                     Text(error)
+                                .font(.caption)
                         .foregroundColor(.red)
-                }
-
-                Group {
-                    TextField("First Name", text: $firstName)
-                        .textFieldStyle(.roundedBorder)
-                    TextField("Last Name", text: $lastName)
-                        .textFieldStyle(.roundedBorder)
-                    DatePicker("Date of Birth", selection: $dob, displayedComponents: .date)
-                    TextField("Mobile", text: $mobile)
-                        .keyboardType(.numberPad)
-                        .textFieldStyle(.roundedBorder)
-                    TextField("Email", text: $email)
-                        .textInputAutocapitalization(.never)
-                        .keyboardType(.emailAddress)
-                        .autocorrectionDisabled()
-                        .textFieldStyle(.roundedBorder)
-                    SecureField("Password", text: $password)
-                        .textFieldStyle(.roundedBorder)
-                    SecureField("Confirm Password", text: $confirmPassword)
-                        .textFieldStyle(.roundedBorder)
-                }
-
-                Picker("Qualification", selection: $qualification) {
-                    ForEach(Qualification.allCases, id: \.self) { value in
-                        Text(value.rawValue).tag(value)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 32)
+                        .padding(.bottom, 16)
                     }
-                }
-                .pickerStyle(.menu)
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Skills")
-                        .font(.headline)
-                    ForEach(SkillDummy.all) { skill in
-                        Toggle(isOn: Binding(
-                            get: { selectedSkills.contains(skill.id) },
-                            set: { isOn in
-                                if isOn { selectedSkills.insert(skill.id) } else { selectedSkills.remove(skill.id) }
+                    
+                    // Step Content
+                    VStack(spacing: 24) {
+                        switch currentStep {
+                        case 1:
+                            PersonalInfoStep(
+                                firstName: $firstName,
+                                lastName: $lastName,
+                                email: $email,
+                                mobile: $mobile,
+                                dob: $dob
+                            )
+                        case 2:
+                            SecurityStep(
+                                password: $password,
+                                confirmPassword: $confirmPassword
+                            )
+                        case 3:
+                            EducationAndSkillsStep(
+                                qualification: $qualification,
+                                selectedSkills: $selectedSkills,
+                                skillsSearchText: $skillsSearchText,
+                                filteredSkills: filteredSkills
+                            )
+                        case 4:
+                            InterestAndLocationStep(
+                                selectedSector: $selectedSector,
+                                selectedArea: $selectedArea,
+                                selectedLocations: $selectedLocations,
+                                locationsSearchText: $locationsSearchText,
+                                filteredLocations: filteredLocations
+                            )
+                        default:
+                            EmptyView()
+                        }
+                    }
+                    .padding(.horizontal, 32)
+                    
+                    Spacer(minLength: 20)
+                    
+                    // Action Section
+                    VStack(spacing: 16) {
+                        HStack(spacing: 12) {
+                            // Back Button
+                            if currentStep > 1 {
+                                Button {
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        currentStep -= 1
+                                    }
+                                } label: {
+                                    Text("Back")
+                                        .font(.headline)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.accentColor)
+                                        .frame(maxWidth: .infinity)
+                                        .frame(height: 50)
+                                        .background(Color(.systemGray6))
+                                        .cornerRadius(12)
+                                }
                             }
-                        )) {
-                            Text(skill.name)
-                        }
-                    }
-                }
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Interest")
-                        .font(.headline)
-                    Picker("Sector", selection: Binding(
-                        get: { selectedSector?.id ?? SectorDummy.all.first!.id },
-                        set: { newId in
-                            selectedSector = SectorDummy.all.first(where: { $0.id == newId })
-                            selectedArea = selectedSector?.areas.first
-                        }
-                    )) {
-                        ForEach(SectorDummy.all) { sector in
-                            Text(sector.name).tag(sector.id)
-                        }
-                    }
-                    .pickerStyle(.menu)
-
-                    if let areas = selectedSector?.areas {
-                        Picker("Area", selection: Binding(
-                            get: { selectedArea?.id ?? areas.first!.id },
-                            set: { newId in
-                                selectedArea = areas.first(where: { $0.id == newId })
+                            
+                            // Next/Create Account Button
+                            Button {
+                                if currentStep < totalSteps {
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        currentStep += 1
+                                    }
+                                } else {
+                                    handleCreateAccount()
+                                }
+                            } label: {
+                                Text(currentStep == totalSteps ? "Create Account" : "Next")
+                                    .font(.headline)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 50)
+                                    .background(isCurrentStepValid ? Color.accentColor : Color.gray)
+                                    .cornerRadius(12)
                             }
-                        )) {
-                            ForEach(areas) { area in
-                                Text(area.name).tag(area.id)
-                            }
+                            .disabled(!isCurrentStepValid)
+                            .animation(.easeInOut(duration: 0.2), value: isCurrentStepValid)
                         }
-                        .pickerStyle(.menu)
-                    }
-                }
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Location Preferences")
-                        .font(.headline)
-                    ForEach(LocationDummy.all) { location in
-                        Toggle(isOn: Binding(
-                            get: { selectedLocations.contains(location.id) },
-                            set: { isOn in
-                                if isOn { selectedLocations.insert(location.id) } else { selectedLocations.remove(location.id) }
+                        
+                        HStack(spacing: 4) {
+                            Text("Already have an account?")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            
+                            Button("Sign In") {
+                                onSignedIn()
                             }
-                        )) {
-                            Text("\(location.state), \(location.district) \(location.city ?? "")")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(.accentColor)
                         }
                     }
+                    .padding(.horizontal, 32)
+                    .padding(.bottom, 30)
                 }
-
-                Button(action: handleCreateAccount) {
-                    Text("Create Account")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .padding(.top, 8)
             }
-            .padding()
+            .background(Color(.systemBackground))
+            .navigationBarHidden(true)
+            .onTapGesture {
+                hideKeyboard()
+            }
         }
-        .onAppear { auth.authError = nil }
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationViewStyle(StackNavigationViewStyle())
+        .onAppear { 
+            auth.authError = nil 
+        }
     }
 
     private func handleCreateAccount() {
@@ -180,6 +234,501 @@ struct SignupView: View {
 
         auth.signup(newUser: user)
         if auth.isAuthenticated { onSignedIn() }
+    }
+    
+    private var isFormValid: Bool {
+        !firstName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        !lastName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        !email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        !mobile.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        !password.isEmpty &&
+        password == confirmPassword
+    }
+    
+    private var isCurrentStepValid: Bool {
+        switch currentStep {
+        case 1: // Personal Information
+            return !firstName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+                   !lastName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+                   !email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+                   !mobile.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        case 2: // Security
+            return !password.isEmpty && password == confirmPassword
+        case 3: // Education and Skills
+            return true // Skills are optional
+        case 4: // Interest and Location
+            return true // These are optional
+        default:
+            return false
+        }
+    }
+    
+    private var filteredSkills: [Skill] {
+        if skillsSearchText.isEmpty {
+            return SkillDummy.all
+        } else {
+            return SkillDummy.all.filter { skill in
+                skill.name.localizedCaseInsensitiveContains(skillsSearchText)
+            }
+        }
+    }
+    
+    private var filteredLocations: [Location] {
+        if locationsSearchText.isEmpty {
+            return LocationDummy.all
+        } else {
+            return LocationDummy.all.filter { location in
+                let searchText = locationsSearchText.lowercased()
+                let state = location.state.lowercased()
+                let district = location.district.lowercased()
+                let city = location.city?.lowercased() ?? ""
+                
+                return state.contains(searchText) ||
+                       district.contains(searchText) ||
+                       city.contains(searchText)
+            }
+        }
+    }
+    
+    private func hideKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+}
+
+// MARK: - Custom Components
+
+struct SectionHeader: View {
+    let title: String
+    
+    var body: some View {
+        Text(title)
+            .font(.headline)
+            .fontWeight(.semibold)
+            .foregroundColor(.primary)
+    }
+}
+
+struct CustomTextField: View {
+    let title: String
+    @Binding var text: String
+    let placeholder: String
+    var keyboardType: UIKeyboardType = .default
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundColor(.primary)
+            
+            TextField(placeholder, text: $text)
+                .textFieldStyle(.plain)
+                .keyboardType(keyboardType)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .textContentType(keyboardType == .emailAddress ? .emailAddress : .none)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(Color(.systemGray6))
+                .cornerRadius(10)
+        }
+    }
+}
+
+struct CustomSecureField: View {
+    let title: String
+    @Binding var text: String
+    let placeholder: String
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundColor(.primary)
+            
+            SecureField(placeholder, text: $text)
+                .textFieldStyle(.plain)
+                .textContentType(.password)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(Color(.systemGray6))
+                .cornerRadius(10)
+        }
+    }
+}
+
+struct SkillToggle: View {
+    let skill: Skill
+    let isSelected: Bool
+    let onToggle: (Bool) -> Void
+    
+    var body: some View {
+        Button {
+            onToggle(!isSelected)
+        } label: {
+            HStack {
+                Text(skill.name)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(isSelected ? .white : .primary)
+                
+                Spacer()
+                
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(isSelected ? Color.accentColor : Color(.systemGray6))
+            .cornerRadius(8)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+struct LocationToggle: View {
+    let location: Location
+    let isSelected: Bool
+    let onToggle: (Bool) -> Void
+    
+    var body: some View {
+        Button {
+            onToggle(!isSelected)
+        } label: {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(location.state), \(location.district)")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(isSelected ? .white : .primary)
+                    
+                    if let city = location.city {
+                        Text(city)
+                            .font(.caption)
+                            .foregroundColor(isSelected ? .white.opacity(0.8) : .secondary)
+                    }
+                }
+                
+                Spacer()
+                
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(isSelected ? Color.accentColor : Color(.systemGray6))
+            .cornerRadius(10)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// MARK: - Step Components
+
+struct PersonalInfoStep: View {
+    @Binding var firstName: String
+    @Binding var lastName: String
+    @Binding var email: String
+    @Binding var mobile: String
+    @Binding var dob: Date
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            SectionHeader(title: "Personal Information")
+            
+            VStack(spacing: 12) {
+                HStack(spacing: 12) {
+                    CustomTextField(
+                        title: "First Name",
+                        text: $firstName,
+                        placeholder: "Enter first name"
+                    )
+                    
+                    CustomTextField(
+                        title: "Last Name",
+                        text: $lastName,
+                        placeholder: "Enter last name"
+                    )
+                }
+                
+                CustomTextField(
+                    title: "Email Address",
+                    text: $email,
+                    placeholder: "name@example.com",
+                    keyboardType: .emailAddress
+                )
+                
+                CustomTextField(
+                    title: "Mobile Number",
+                    text: $mobile,
+                    placeholder: "Enter mobile number",
+                    keyboardType: .numberPad
+                )
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Date of Birth")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.primary)
+                    
+                    DatePicker("", selection: $dob, displayedComponents: .date)
+                        .datePickerStyle(.compact)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(10)
+                }
+            }
+        }
+    }
+}
+
+struct SecurityStep: View {
+    @Binding var password: String
+    @Binding var confirmPassword: String
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            SectionHeader(title: "Security")
+            
+            VStack(spacing: 12) {
+                CustomSecureField(
+                    title: "Password",
+                    text: $password,
+                    placeholder: "Create a password"
+                )
+                
+                CustomSecureField(
+                    title: "Confirm Password",
+                    text: $confirmPassword,
+                    placeholder: "Confirm your password"
+                )
+            }
+        }
+    }
+}
+
+struct EducationAndSkillsStep: View {
+    @Binding var qualification: Qualification
+    @Binding var selectedSkills: Set<UUID>
+    @Binding var skillsSearchText: String
+    let filteredSkills: [Skill]
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Education Section
+            VStack(alignment: .leading, spacing: 16) {
+                SectionHeader(title: "Education")
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Highest Qualification")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.primary)
+                    
+                    Picker("Qualification", selection: $qualification) {
+                        ForEach(Qualification.allCases, id: \.self) { value in
+                            Text(value.rawValue).tag(value)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(10)
+                }
+            }
+            
+            // Skills Section
+            VStack(alignment: .leading, spacing: 16) {
+                SectionHeader(title: "Skills")
+                
+                // Skills Search Bar
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.secondary)
+                        .font(.subheadline)
+                    
+                    TextField("Search skills...", text: $skillsSearchText)
+                        .textFieldStyle(.plain)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                    
+                    if !skillsSearchText.isEmpty {
+                        Button {
+                            skillsSearchText = ""
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color(.systemGray6))
+                .cornerRadius(8)
+                
+                // Skills Grid
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 8) {
+                    ForEach(filteredSkills) { skill in
+                        SkillToggle(
+                            skill: skill,
+                            isSelected: selectedSkills.contains(skill.id),
+                            onToggle: { isSelected in
+                                if isSelected {
+                                    selectedSkills.insert(skill.id)
+                                } else {
+                                    selectedSkills.remove(skill.id)
+                                }
+                            }
+                        )
+                    }
+                }
+                
+                if filteredSkills.isEmpty && !skillsSearchText.isEmpty {
+                    Text("No skills found matching '\(skillsSearchText)'")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.vertical, 20)
+                }
+            }
+        }
+    }
+}
+
+struct InterestAndLocationStep: View {
+    @Binding var selectedSector: Sector?
+    @Binding var selectedArea: Area?
+    @Binding var selectedLocations: Set<UUID>
+    @Binding var locationsSearchText: String
+    let filteredLocations: [Location]
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Interest Section
+            VStack(alignment: .leading, spacing: 16) {
+                SectionHeader(title: "Areas of Interest")
+                
+                VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Sector")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(.primary)
+                        
+                        Picker("Sector", selection: Binding(
+                            get: { selectedSector?.id ?? SectorDummy.all.first!.id },
+                            set: { newId in
+                                selectedSector = SectorDummy.all.first(where: { $0.id == newId })
+                                selectedArea = selectedSector?.areas.first
+                            }
+                        )) {
+                            ForEach(SectorDummy.all) { sector in
+                                Text(sector.name).tag(sector.id)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(10)
+                    }
+                    
+                    if let areas = selectedSector?.areas {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Area")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundColor(.primary)
+                            
+                            Picker("Area", selection: Binding(
+                                get: { selectedArea?.id ?? areas.first!.id },
+                                set: { newId in
+                                    selectedArea = areas.first(where: { $0.id == newId })
+                                }
+                            )) {
+                                ForEach(areas) { area in
+                                    Text(area.name).tag(area.id)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(Color(.systemGray6))
+                            .cornerRadius(10)
+                        }
+                    }
+                }
+            }
+            
+            // Location Section
+            VStack(alignment: .leading, spacing: 16) {
+                SectionHeader(title: "Location Preferences")
+                
+                // Locations Search Bar
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.secondary)
+                        .font(.subheadline)
+                    
+                    TextField("Search locations...", text: $locationsSearchText)
+                        .textFieldStyle(.plain)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                    
+                    if !locationsSearchText.isEmpty {
+                        Button {
+                            locationsSearchText = ""
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color(.systemGray6))
+                .cornerRadius(8)
+                
+                // Locations List
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 1), spacing: 8) {
+                    ForEach(filteredLocations) { location in
+                        LocationToggle(
+                            location: location,
+                            isSelected: selectedLocations.contains(location.id),
+                            onToggle: { isSelected in
+                                if isSelected {
+                                    selectedLocations.insert(location.id)
+                                } else {
+                                    selectedLocations.remove(location.id)
+                                }
+                            }
+                        )
+                    }
+                }
+                
+                if filteredLocations.isEmpty && !locationsSearchText.isEmpty {
+                    Text("No locations found matching '\(locationsSearchText)'")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.vertical, 20)
+                }
+            }
+        }
     }
 }
 
