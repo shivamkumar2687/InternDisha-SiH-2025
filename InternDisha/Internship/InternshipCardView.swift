@@ -11,6 +11,8 @@ struct InternshipCardView: View {
     let internship: Internship
     let applyAction: () -> Void
     let aboutAction: () -> Void
+    var onSaveTap: () -> Void = {}
+    var isSaved: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) { // Reduced spacing for compact layout
@@ -20,6 +22,11 @@ struct InternshipCardView: View {
                     .font(.headline)
                     .foregroundStyle(.primary)
                 Spacer()
+                Button(action: onSaveTap) {
+                    Image(systemName: isSaved ? "heart.fill" : "heart")
+                        .foregroundStyle(isSaved ? .red : .gray)
+                }
+                .padding(.trailing, 4)
                 Label("\(internship.location.city ?? internship.location.district)", systemImage: "mappin.and.ellipse")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)

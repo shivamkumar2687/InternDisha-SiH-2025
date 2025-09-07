@@ -28,6 +28,7 @@ struct AppliedInternshipCardView: View {
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(.primary)
                 .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
                 .padding(.vertical, 2)
             
             // Key details in key-value format
@@ -118,21 +119,30 @@ struct AppliedInternshipCardView: View {
 
             // Buttons with proper alignment and more height
             HStack(spacing: 12) {
-                // Applied button (green)
-                Text("Applied")
-                    .font(.subheadline.weight(.semibold))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
-                    .foregroundColor(.white)
-                    .background(RoundedRectangle(cornerRadius: 8).fill(Color.green))
-
+                // Status badge based on internship status
+                statusBadge
+                
+                Spacer()
+  
+                Button(action: {}) {
+                    Text("Apply")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.blue)
+                        .frame(width: 100)
+                        .padding(.vertical, 8)
+                }
+                .buttonStyle(.bordered)
+                .cornerRadius(8)
+                
                 Button(action: {}) {
                     Text("About")
                         .font(.subheadline.weight(.semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10) // Moderate vertical padding
+                        .foregroundColor(.blue)
+                        .frame(width: 100)
+                        .padding(.vertical, 8)
                 }
                 .buttonStyle(.bordered)
+                .cornerRadius(8)
             }
         }
         .padding(16) // Moderate padding for more compact card
@@ -144,6 +154,34 @@ struct AppliedInternshipCardView: View {
         .shadow(color: .black.opacity(0.04), radius: 4, x: 0, y: 2) // Very subtle shadow
         .contentShape(Rectangle())
         .animation(.snappy, value: internship.id)
+    }
+    
+    private var statusBadge: some View {
+        Group {
+            switch internship.status {
+            case .offerReceived:
+                Text("Offer Received")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(RoundedRectangle(cornerRadius: 8).fill(Color.blue))
+            case .offerAccepted:
+                Text("Offer Accepted")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(RoundedRectangle(cornerRadius: 8).fill(Color.purple))
+            default:
+                Text("Applied")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(RoundedRectangle(cornerRadius: 8).fill(Color.green))
+            }
+        }
     }
 }
 

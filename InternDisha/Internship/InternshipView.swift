@@ -85,7 +85,11 @@ struct InternshipView: View {
                         appliedInternship = internship
                         showAppliedAlert = true 
                     },
-                    aboutAction: { withAnimation(.snappy) { showAbout = internship } }
+                    aboutAction: { withAnimation(.snappy) { showAbout = internship } },
+                    onSaveTap: {
+                        viewModel.toggleSaveInternship(internship)
+                    },
+                    isSaved: viewModel.isInternshipSaved(internship)
                 )
                 .listRowInsets(EdgeInsets())
                 .listRowSeparator(.hidden)
