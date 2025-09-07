@@ -15,6 +15,7 @@ struct InternshipAboutView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
                     // Company and Location row
                     HStack(alignment: .firstTextBaseline) {
                         Text(internship.company.name)
