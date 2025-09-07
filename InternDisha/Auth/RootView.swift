@@ -18,16 +18,13 @@ struct RootView: View {
             } else {
                 NavigationStack {
                     VStack(spacing: 24) {
-                        NavigationLink(isActive: $showSignup) {
-                            SignupView(onSignedIn: { showSignup = false })
-                        } label: {
-                            EmptyView()
-                        }.hidden()
-
                         LoginView(onSignupTapped: { showSignup = true })
                     }
                     .padding()
                     .navigationTitle("Welcome")
+                }
+                .sheet(isPresented: $showSignup) {
+                    SignupView(onSignedIn: { showSignup = false })
                 }
             }
         }
