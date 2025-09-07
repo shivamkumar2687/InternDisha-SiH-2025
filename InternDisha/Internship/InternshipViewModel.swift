@@ -20,6 +20,7 @@ final class InternshipViewModel: ObservableObject {
     @Published private(set) var filtered: [Internship] = []
     @Published private(set) var allSkills: [Skill] = []
     @Published private(set) var allLocations: [Location] = []
+    @Published private(set) var savedInternships: [Internship] = []
     
     private let userRepository = UserRepository()
 
@@ -58,6 +59,7 @@ final class InternshipViewModel: ObservableObject {
     init() {
         load()
         bind()
+        loadSavedInternships()
     }
 
     func load() {
@@ -166,6 +168,20 @@ final class InternshipViewModel: ObservableObject {
                 }
             }
         }
+    }
+    
+    func toggleSaveInternship(_ internship: Internship) {
+        if userRepository.toggleSaveInternship(internship) {
+            loadSavedInternships()
+        }
+    }
+    
+    func loadSavedInternships() {
+        savedInternships = userRepository.loadSavedInternships()
+    }
+    
+    func isInternshipSaved(_ internship: Internship) -> Bool {
+        return savedInternships.contains(where: { $0.id == internship.id })
     }
     
     // Helper method to check if an internship passes current filters
