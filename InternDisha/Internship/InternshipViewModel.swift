@@ -24,6 +24,36 @@ final class InternshipViewModel: ObservableObject {
     private let userRepository = UserRepository()
 
     private var cancellables: Set<AnyCancellable> = []
+    private let topRecommendationLimit: Int = 5
+    private let qualificationOrder: [Qualification: Int] = [.twelfth: 0, .bachelors: 1, .masters: 2]
+    
+    // MARK: - Config
+    struct RecommendationConfig {
+        var weightSkillExact: Int = 3
+        var weightSkillRelated: Int = 1
+        var weightSector: Int = 5
+        var weightEducation: Int = 4
+        var weightLocationExact: Int = 5
+        var weightLocationState: Int = 2
+        var weightFieldOfStudyExact: Int = 4
+        var weightFieldOfStudyRelated: Int = 2
+        var relatedSkillsMap: [String: Set<String>] = [
+            "swift": ["kotlin"],
+            "kotlin": ["swift"],
+            "python": ["machine learning", "sql"],
+            "machine learning": ["python", "sql"],
+            "sql": ["python", "machine learning"],
+            "ui/ux design": []
+        ]
+        var relatedFieldsOfStudyMap: [String: Set<String>] = [
+            // Examples to be extended as dataset grows
+            "computer science": ["information technology", "software engineering"],
+            "commerce": ["finance", "accounting"],
+            "design": ["graphic design", "ui/ux", "visual communication"],
+            "sociology": ["rural development", "social work"],
+        ]
+    }
+    private var recConfig = RecommendationConfig()
 
     init() {
         load()
@@ -66,12 +96,9 @@ final class InternshipViewModel: ObservableObject {
 
     private func applyFilters() {
         let text = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        
-        // Get user skills and location preferences for recommended mode
-        let userSkills = userRepository.loadCurrentUser()?.skills ?? []
-        let userLocations = userRepository.loadCurrentUser()?.locationPreferences ?? []
-        
-        filtered = internships.filter { internship in
+
+        // Step 1: Base filtering using search text and selected filters
+        let baseFiltered = internships.filter { internship in
             // Text search filter
             var matchesText = true
             if !text.isEmpty {
@@ -85,24 +112,28 @@ final class InternshipViewModel: ObservableObject {
 
                 matchesText = haystack.contains { $0.contains(text) }
             }
-            
+
             // Selected filters
             let matchesSkills = selectedSkillIds.isEmpty || !selectedSkillIds.isDisjoint(with: Set(internship.requiredSkills.map { $0.id }))
             let matchesLocations = selectedLocationIds.isEmpty || selectedLocationIds.contains(internship.location.id)
-            
-            // Recommended mode filter - match user skills and locations
-            var matchesRecommended = true
-            if isRecommendedMode {
-                // Check if any of the internship's required skills match user's skills
-                let hasMatchingSkill = !Set(internship.requiredSkills.map { $0.id }).isDisjoint(with: Set(userSkills.map { $0.id }))
-                
-                // Check if internship location matches any of user's preferred locations
-                let hasMatchingLocation = userLocations.contains { $0.id == internship.location.id }
-                
-                matchesRecommended = hasMatchingSkill || hasMatchingLocation
-            }
-            
-            return matchesText && matchesSkills && matchesLocations && matchesRecommended
+
+            return matchesText && matchesSkills && matchesLocations
+        }
+
+        // Step 2: If Recommended mode, score, sort and limit; else just assign
+        if isRecommendedMode, let user = userRepository.loadCurrentUser() {
+            let scored: [(internship: Internship, score: Int)] = baseFiltered.map { ($0, recommendationScore(for: $0, user: user)) }
+            let positive = scored.filter { $0.score > 0 }
+            let sorted = (positive.isEmpty ? scored : positive)
+                .sorted { lhs, rhs in
+                    if lhs.score == rhs.score {
+                        return lhs.internship.title < rhs.internship.title
+                    }
+                    return lhs.score > rhs.score
+                }
+            filtered = Array(sorted.prefix(topRecommendationLimit).map { $0.internship })
+        } else {
+            filtered = baseFiltered
         }
     }
     
@@ -121,8 +152,18 @@ final class InternshipViewModel: ObservableObject {
             let shouldAdd = applyFiltersToInternship(internship)
             if shouldAdd {
                 filtered.append(internship)
-                // Sort the filtered list to maintain order
-                filtered.sort { $0.title < $1.title }
+                // Maintain ordering
+                if isRecommendedMode, let user = userRepository.loadCurrentUser() {
+                    let ranked = filtered.map { ($0, recommendationScore(for: $0, user: user)) }
+                        .sorted { lhs, rhs in
+                            if lhs.1 == rhs.1 { return lhs.0.title < rhs.0.title }
+                            return lhs.1 > rhs.1
+                        }
+                        .map { $0.0 }
+                    filtered = Array(ranked.prefix(topRecommendationLimit))
+                } else {
+                    filtered.sort { $0.title < $1.title }
+                }
             }
         }
     }
@@ -130,7 +171,7 @@ final class InternshipViewModel: ObservableObject {
     // Helper method to check if an internship passes current filters
     private func applyFiltersToInternship(_ internship: Internship) -> Bool {
         let text = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        
+
         // Text search filter
         var matchesText = true
         if !text.isEmpty {
@@ -144,28 +185,108 @@ final class InternshipViewModel: ObservableObject {
 
             matchesText = haystack.contains { $0.contains(text) }
         }
-        
+
         // Selected filters
         let matchesSkills = selectedSkillIds.isEmpty || !selectedSkillIds.isDisjoint(with: Set(internship.requiredSkills.map { $0.id }))
         let matchesLocations = selectedLocationIds.isEmpty || selectedLocationIds.contains(internship.location.id)
-        
-        // Recommended mode filter
-        var matchesRecommended = true
-        if isRecommendedMode {
-            // Get user skills and location preferences
-            let userSkills = userRepository.loadCurrentUser()?.skills ?? []
-            let userLocations = userRepository.loadCurrentUser()?.locationPreferences ?? []
-            
-            // Check if any of the internship's required skills match user's skills
-            let hasMatchingSkill = !Set(internship.requiredSkills.map { $0.id }).isDisjoint(with: Set(userSkills.map { $0.id }))
-            
-            // Check if internship location matches any of user's preferred locations
-            let hasMatchingLocation = userLocations.contains { $0.id == internship.location.id }
-            
-            matchesRecommended = hasMatchingSkill || hasMatchingLocation
+
+        if !matchesText || !matchesSkills || !matchesLocations { return false }
+
+        if isRecommendedMode, let user = userRepository.loadCurrentUser() {
+            let score = recommendationScore(for: internship, user: user)
+            return score > 0
         }
-        
-        return matchesText && matchesSkills && matchesLocations && matchesRecommended
+
+        return true
+    }
+
+    // MARK: - Recommendation Scoring
+    private func recommendationScore(for internship: Internship, user: User) -> Int {
+        var score = 0
+
+        // Skills: +3 for each exact match, +1 for each related (only if not exact matched)
+        let userSkills = user.skills
+        let userSkillNames = Set(userSkills.map { normalize($0.name) })
+        let requiredSkillNames = internship.requiredSkills.map { normalize($0.name) }
+
+        for required in requiredSkillNames {
+            if userSkillNames.contains(required) {
+                score += recConfig.weightSkillExact
+            } else if hasRelatedSkill(userSkillNames: userSkillNames, requiredSkillName: required) {
+                score += recConfig.weightSkillRelated
+            }
+        }
+
+        // Sector match: +5 if user's interests include the internship sector
+        if user.interestsSector.contains(where: { $0.id == internship.sector.id }) {
+            score += recConfig.weightSector
+        }
+
+        // Education: +4 if user qualification >= internship minimum
+        if let userLevel = qualificationOrder[user.maxQualification], let minLevel = qualificationOrder[internship.minimumQualification], userLevel >= minLevel {
+            score += recConfig.weightEducation
+        }
+
+        // Location: +5 exact preferred location match, else +2 if same state
+        let preferred = user.locationPreferences
+        let exact = preferred.contains(where: { $0.id == internship.location.id })
+        if exact {
+            score += recConfig.weightLocationExact
+        } else if preferred.contains(where: { $0.state.caseInsensitiveCompare(internship.location.state) == .orderedSame }) {
+            score += recConfig.weightLocationState
+        }
+
+        // Fields of Study: exact or related
+        if let userFields = user.fieldsOfStudy, let acceptedFields = internship.acceptedFieldsOfStudy {
+            let userFieldNames = Set(userFields.map { normalize($0.name) })
+            let acceptedNames = acceptedFields.map { normalize($0.name) }
+            var matched = false
+            for requiredField in acceptedNames {
+                if userFieldNames.contains(requiredField) {
+                    score += recConfig.weightFieldOfStudyExact
+                    matched = true
+                } else if hasRelatedField(userFieldNames: userFieldNames, requiredFieldName: requiredField) {
+                    score += recConfig.weightFieldOfStudyRelated
+                    matched = true
+                }
+            }
+            // 'matched' is not used further; retained for readability if needed later
+            _ = matched
+        }
+
+        return score
+    }
+
+    private func hasRelatedSkill(userSkillNames: Set<String>, requiredSkillName: String) -> Bool {
+        // From curated map
+        if let related = recConfig.relatedSkillsMap[requiredSkillName] {
+            if !related.isDisjoint(with: userSkillNames) { return true }
+        }
+        // Fallback: token overlap or containment heuristic
+        for candidate in userSkillNames {
+            if candidate.contains(requiredSkillName) || requiredSkillName.contains(candidate) { return true }
+            let candidateTokens = Set(candidate.split(separator: " ").map(String.init))
+            let requiredTokens = Set(requiredSkillName.split(separator: " ").map(String.init))
+            if !candidateTokens.isDisjoint(with: requiredTokens) { return true }
+        }
+        return false
+    }
+
+    private func hasRelatedField(userFieldNames: Set<String>, requiredFieldName: String) -> Bool {
+        if let related = recConfig.relatedFieldsOfStudyMap[requiredFieldName] {
+            if !related.isDisjoint(with: userFieldNames) { return true }
+        }
+        for candidate in userFieldNames {
+            if candidate.contains(requiredFieldName) || requiredFieldName.contains(candidate) { return true }
+            let candidateTokens = Set(candidate.split(separator: " ").map(String.init))
+            let requiredTokens = Set(requiredFieldName.split(separator: " ").map(String.init))
+            if !candidateTokens.isDisjoint(with: requiredTokens) { return true }
+        }
+        return false
+    }
+
+    private func normalize(_ name: String) -> String {
+        name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 }
 

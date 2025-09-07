@@ -45,6 +45,12 @@ struct Area: Identifiable, Codable, Hashable {
     let name: String
 }
 
+// A generic field-of-study representation to support diverse education streams
+struct FieldOfStudy: Identifiable, Codable, Hashable {
+    let id: UUID
+    let name: String
+}
+
 // MARK: - User
 
 struct User: Identifiable, Codable {
@@ -60,6 +66,8 @@ struct User: Identifiable, Codable {
     var skills: [Skill]
     var interestsSector: [Sector]
     var locationPreferences: [Location]
+    // Optional fields-of-study to cover non-BTech or varied academic backgrounds
+    var fieldsOfStudy: [FieldOfStudy]? = nil
 }
 
 // MARK: - Company
@@ -85,4 +93,6 @@ struct Internship: Identifiable, Codable {
     var location: Location
     
     var requiredSkills: [Skill]
+    // Optional acceptable fields-of-study for this internship
+    var acceptedFieldsOfStudy: [FieldOfStudy]? = nil
 }
