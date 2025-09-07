@@ -9,9 +9,11 @@ import SwiftUI
 
 @main
 struct InternDishaApp: App {
+    @StateObject private var auth = AuthViewModel()
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RootView()
+                .environmentObject(auth)
         }
     }
 }
