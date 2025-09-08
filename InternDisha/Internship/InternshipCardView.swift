@@ -61,7 +61,7 @@ struct InternshipCardView: View {
             // Internship details in key-value format
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
-                    Text("Internship ID")
+                    Text(String(localized: "Internship ID"))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                     Spacer()
@@ -71,7 +71,7 @@ struct InternshipCardView: View {
                 }
                 
                 HStack {
-                    Text("Internship Title")
+                    Text(String(localized: "Internship Title"))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                     Spacer()
@@ -81,7 +81,7 @@ struct InternshipCardView: View {
                 }
                 
                 HStack {
-                    Text("Minimum Qualification")
+                    Text(String(localized: "Minimum Qualification"))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                     Spacer()
@@ -91,7 +91,7 @@ struct InternshipCardView: View {
                 }
                 
                 HStack {
-                    Text("Number of Openings")
+                    Text(String(localized: "Number of Openings"))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                     Spacer()
@@ -101,7 +101,7 @@ struct InternshipCardView: View {
                 }
                 
                 HStack {
-                    Text("Area/Field")
+                    Text(String(localized: "Area/Field"))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                     Spacer()
@@ -118,7 +118,7 @@ struct InternshipCardView: View {
 
             // Skills section with key-value format
             HStack {
-                Text("Skill 1")
+                Text(String(localized: "Skill 1"))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 Spacer()
@@ -132,7 +132,7 @@ struct InternshipCardView: View {
             if internship.requiredSkills.count > 1 {
                 ForEach(1..<min(internship.requiredSkills.count, 3)) { index in
                     HStack {
-                        Text("Skill \(index + 1)")
+                        Text(String(localized: "Skill")) + Text(" \(index + 1)")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                         Spacer()
@@ -145,7 +145,7 @@ struct InternshipCardView: View {
                 // Show count of remaining skills if more than 3
                 if internship.requiredSkills.count > 3 {
                     HStack {
-                        Text("+ \(internship.requiredSkills.count - 3) more skills")
+                        Text("+ \(internship.requiredSkills.count - 3) ") + Text(String(localized: "more skills"))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         Spacer()
@@ -158,7 +158,7 @@ struct InternshipCardView: View {
             // Buttons with proper alignment and more height
             HStack(spacing: 12) {
                 Button(action: applyAction) {
-                    Text("Apply")
+                    Text(String(localized: "Apply"))
                         .font(.subheadline.weight(.semibold))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10) // Moderate vertical padding
@@ -167,7 +167,7 @@ struct InternshipCardView: View {
                 .tint(.blue)
 
                 Button(action: aboutAction) {
-                    Text("About")
+                    Text(String(localized: "About"))
                         .font(.subheadline.weight(.semibold))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10) // Moderate vertical padding

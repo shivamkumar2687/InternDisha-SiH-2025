@@ -168,7 +168,7 @@ struct InternshipAboutView: View {
                 }
                 .padding()
             }
-            .navigationTitle("About")
+            .navigationTitle(String(localized: "About"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -191,7 +191,7 @@ extension InternshipAboutView {
             } label: {
                 HStack {
                     Image(systemName: "chart.bar.xaxis")
-                    Text("Predict Chance")
+                    Text(String(localized: "Predict Chance"))
                         .font(.headline)
                     Spacer()
                     Image(systemName: showPredict ? "chevron.up" : "chevron.down")
@@ -207,7 +207,7 @@ extension InternshipAboutView {
                     VStack(alignment: .leading, spacing: 14) {
                         // Overall score with info button
                         HStack(alignment: .firstTextBaseline, spacing: 8) {
-                            Text("🎯 Match Score:")
+                            Text("🎯 " + String(localized: "Match Score") + ":")
                                 .font(.body.weight(.semibold))
                             Text("\(breakdown.overallPercent)%")
                                 .font(.title2.weight(.bold))
@@ -259,7 +259,7 @@ extension InternshipAboutView {
                     .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color(.systemGray6)))
                     .transition(.opacity.combined(with: .move(edge: .top)))
                 } else {
-                    Text("Sign in and set up your profile to see your match score.")
+                    Text(String(localized: "Sign in and set up your profile to see your match score."))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .padding(12)

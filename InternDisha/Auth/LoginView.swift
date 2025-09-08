@@ -22,12 +22,12 @@ struct LoginView: View {
             VStack(spacing: 0) {
                 // Header Section
                 VStack(spacing: 8) {
-                    Text("Welcome Back")
+                    Text(String(localized: "Welcome Back"))
                         .font(.largeTitle)
                         .fontWeight(.bold)
                         .multilineTextAlignment(.center)
                     
-                    Text("Sign in to your account")
+                    Text(String(localized: "Sign in to your account"))
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
@@ -40,12 +40,12 @@ struct LoginView: View {
                 VStack(spacing: 16) {
                     // Email Field
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Email")
+                        Text(String(localized: "Email"))
                             .font(.subheadline)
                             .fontWeight(.medium)
                             .foregroundColor(.primary)
                         
-                        TextField("Enter your email", text: $email)
+                        TextField(String(localized: "Enter your email"), text: $email)
                             .textFieldStyle(.plain)
                             .keyboardType(.emailAddress)
                             .textInputAutocapitalization(.never)
@@ -60,12 +60,12 @@ struct LoginView: View {
                     
                     // Password Field
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Password")
+                        Text(String(localized: "Password"))
                             .font(.subheadline)
                             .fontWeight(.medium)
                             .foregroundColor(.primary)
                         
-                        SecureField("Enter your password", text: $password)
+                        SecureField(String(localized: "Enter your password"), text: $password)
                             .textFieldStyle(.plain)
                             .textContentType(.password)
                             .focused($focusedField, equals: .password)
@@ -99,7 +99,7 @@ struct LoginView: View {
                     Button {
                         auth.login(email: email, password: password)
                     } label: {
-                        Text("Sign In")
+                        Text(String(localized: "Sign In"))
                             .font(.headline)
                             .fontWeight(.semibold)
                             .foregroundColor(.white)
@@ -113,11 +113,11 @@ struct LoginView: View {
                     
                     // Sign Up Link
                     HStack(spacing: 4) {
-                        Text("Don't have an account?")
+                        Text(String(localized: "Don't have an account?"))
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                         
-                        Button("Sign Up") {
+                        Button(String(localized: "Sign Up")) {
                             onSignupTapped()
                         }
                         .font(.subheadline)
