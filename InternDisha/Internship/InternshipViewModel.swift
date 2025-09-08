@@ -56,6 +56,95 @@ final class InternshipViewModel: ObservableObject {
     }
     private var recConfig = RecommendationConfig()
 
+    // MARK: - Public Match Breakdown API
+    struct MatchBreakdown {
+        let overallPercent: Int
+        let skillsWeightedPercent: Int // out of 40
+        let sectorWeightedPercent: Int // out of 30
+        let educationWeightedPercent: Int // out of 20
+        let locationWeightedPercent: Int // out of 10
+        let skillsMatchRatio: Double // 0...1
+        let sectorMatchRatio: Double // 0...1
+        let educationMatchRatio: Double // 0...1
+        let locationMatchRatio: Double // 0...1
+        let missingSkills: [String]
+        let matchedSkills: [String]
+    }
+
+    // Returns weighted breakdown (40/30/20/10) and overall percent 0...100
+    func computeMatchBreakdown(for internship: Internship) -> MatchBreakdown? {
+        guard let user = userRepository.loadCurrentUser() else { return nil }
+
+        // Skills ratio: exact = 1.0, related = 0.5 credit
+        let requiredSkills = internship.requiredSkills.map { ($0.id, normalize($0.name), $0.name) }
+        let userSkillNames = Set(user.skills.map { normalize($0.name) })
+
+        var exactCount: Int = 0
+        var relatedCount: Int = 0
+        var matchedSkillDisplayNames: [String] = []
+        var missingSkillDisplayNames: [String] = []
+
+        for (_, normalizedReq, displayName) in requiredSkills {
+            if userSkillNames.contains(normalizedReq) {
+                exactCount += 1
+                matchedSkillDisplayNames.append(displayName)
+            } else if hasRelatedSkill(userSkillNames: userSkillNames, requiredSkillName: normalizedReq) {
+                relatedCount += 1
+                matchedSkillDisplayNames.append(displayName)
+            } else {
+                missingSkillDisplayNames.append(displayName)
+            }
+        }
+
+        let denom = max(requiredSkills.count, 1)
+        let skillsRatio = min(1.0, (Double(exactCount) + 0.5 * Double(relatedCount)) / Double(denom))
+
+        // Sector ratio
+        let sectorMatched = user.interestsSector.contains(where: { $0.id == internship.sector.id })
+        let sectorRatio: Double = sectorMatched ? 1.0 : 0.0
+
+        // Education ratio
+        let educationOk: Bool
+        if let userLevel = qualificationOrder[user.maxQualification], let minLevel = qualificationOrder[internship.minimumQualification] {
+            educationOk = userLevel >= minLevel
+        } else {
+            educationOk = false
+        }
+        let educationRatio: Double = educationOk ? 1.0 : 0.0
+
+        // Location ratio: 1.0 exact location, 0.8 same state, 0.0 otherwise
+        let preferred = user.locationPreferences
+        let exact = preferred.contains(where: { $0.id == internship.location.id })
+        let sameState = preferred.contains(where: { $0.state.caseInsensitiveCompare(internship.location.state) == .orderedSame })
+        let locationRatio: Double = exact ? 1.0 : (sameState ? 0.8 : 0.0)
+
+        // Weights
+        let wSkills = 40.0
+        let wSector = 30.0
+        let wEducation = 20.0
+        let wLocation = 10.0
+
+        let skillsWeighted = Int(round(skillsRatio * wSkills))
+        let sectorWeighted = Int(round(sectorRatio * wSector))
+        let educationWeighted = Int(round(educationRatio * wEducation))
+        let locationWeighted = Int(round(locationRatio * wLocation))
+        let overall = min(100, skillsWeighted + sectorWeighted + educationWeighted + locationWeighted)
+
+        return MatchBreakdown(
+            overallPercent: overall,
+            skillsWeightedPercent: skillsWeighted,
+            sectorWeightedPercent: sectorWeighted,
+            educationWeightedPercent: educationWeighted,
+            locationWeightedPercent: locationWeighted,
+            skillsMatchRatio: skillsRatio,
+            sectorMatchRatio: sectorRatio,
+            educationMatchRatio: educationRatio,
+            locationMatchRatio: locationRatio,
+            missingSkills: missingSkillDisplayNames,
+            matchedSkills: matchedSkillDisplayNames
+        )
+    }
+
     init() {
         load()
         bind()
