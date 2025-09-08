@@ -124,15 +124,15 @@ struct AppliedInternshipCardView: View {
                 
                 Spacer()
   
-                Button(action: {}) {
-                    Text("Apply")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundColor(.blue)
-                        .frame(width: 100)
-                        .padding(.vertical, 8)
-                }
-                .buttonStyle(.bordered)
-                .cornerRadius(8)
+//                Button(action: {}) {
+//                    Text("Apply")
+//                        .font(.subheadline.weight(.semibold))
+//                        .foregroundColor(.blue)
+//                        .frame(width: 100)
+//                        .padding(.vertical, 8)
+//                }
+//                .buttonStyle(.bordered)
+//                .cornerRadius(8)
                 
                 Button(action: {}) {
                     Text("About")
@@ -163,22 +163,30 @@ struct AppliedInternshipCardView: View {
                 Text("Offer Received")
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(.white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
+                    .padding(.horizontal, 50)
+                    .padding(.vertical, 12)
                     .background(RoundedRectangle(cornerRadius: 8).fill(Color.blue))
             case .offerAccepted:
                 Text("Offer Accepted")
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(.white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
+                    .padding(.horizontal, 50)
+                    .padding(.vertical, 12)
                     .background(RoundedRectangle(cornerRadius: 8).fill(Color.purple))
+//            case .savedInternships:
+//                Text("Apply")
+//                    .font(.subheadline.weight(.semibold))
+//                    .foregroundColor(.white)
+//                    .padding(.horizontal, 60)
+//                    .padding(.vertical, 12)
+//                    .background(RoundedRectangle(cornerRadius: 8).fill(Color.blue))
+                
             default:
                 Text("Applied")
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(.white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
+                    .padding(.horizontal, 60)
+                    .padding(.vertical, 12)
                     .background(RoundedRectangle(cornerRadius: 8).fill(Color.green))
             }
         }
