@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ProfileView: View {
     @EnvironmentObject var auth: AuthViewModel
+    @State private var showEdit = false
 
     var body: some View {
         Group {
@@ -97,6 +98,24 @@ struct ProfileView: View {
                     }
                 }
                 .navigationTitle("Profile")
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Edit") { showEdit = true }
+                    }
+                }
+                .sheet(isPresented: $showEdit) {
+                    EditProfileSheet(
+                        initialUser: user,
+                        onSave: { updated in
+                            auth.updateCurrentUser(
+                                skills: updated.skills,
+                                interests: updated.interestsSector,
+                                locations: updated.locationPreferences,
+                                maxQualification: updated.maxQualification
+                            )
+                        }
+                    )
+                }
             } else {
                 VStack(spacing: 12) {
                     Text("Not logged in")

@@ -21,7 +21,7 @@ struct ContentView: View {
                 .tabItem {
                     Label("My Internship", systemImage: "heart")
                 }
-            ProfileView()
+            NavigationStack { ProfileView() }
                 .tabItem {
                     Label("Profile", systemImage: "person.crop.circle")
                 }

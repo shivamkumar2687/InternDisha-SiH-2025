@@ -73,6 +73,25 @@ final class AuthViewModel: ObservableObject {
         currentUser = nil
         repository.saveCurrentUser(nil)
     }
+
+    // Update and persist current user profile fields
+    func updateCurrentUser(skills: [Skill]? = nil,
+                           interests: [Sector]? = nil,
+                           locations: [Location]? = nil,
+                           maxQualification: Qualification? = nil) {
+        guard var user = currentUser else { return }
+        if let skills = skills { user.skills = skills }
+        if let interests = interests { user.interestsSector = interests }
+        if let locations = locations { user.locationPreferences = locations }
+        if let maxQualification = maxQualification { user.maxQualification = maxQualification }
+        currentUser = user
+        repository.saveCurrentUser(user)
+        // Also reflect in the users array
+        if let idx = users.firstIndex(where: { $0.id == user.id }) {
+            users[idx] = user
+            repository.saveUsers(users)
+        }
+    }
 }
 
 
