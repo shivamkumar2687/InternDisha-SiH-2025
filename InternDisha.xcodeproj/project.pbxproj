@@ -10,22 +10,9 @@
 		2A4A58A22E6CB0AC00886AF8 /* InternDisha.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = InternDisha.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		2A294A432E6ED017006A2F2F /* Exceptions for "InternDisha" folder in "InternDisha" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = 2A4A58A12E6CB0AC00886AF8 /* InternDisha */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		2A4A58A42E6CB0AC00886AF8 /* InternDisha */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				2A294A432E6ED017006A2F2F /* Exceptions for "InternDisha" folder in "InternDisha" target */,
-			);
 			path = InternDisha;
 			sourceTree = "<group>";
 		};
@@ -103,9 +90,10 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
-				hi,
+				Base,
 				ta,
 				bn,
+				hi,
 			);
 			mainGroup = 2A4A58992E6CB0AC00886AF8;
 			minimizedProjectReferenceProxies = 1;
@@ -271,8 +259,6 @@
 				DEVELOPMENT_TEAM = QZDA7N8H2Y;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = InternDisha/Info.plist;
-				INFOPLIST_KEY_LSApplicationCategoryType = "";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -301,8 +287,6 @@
 				DEVELOPMENT_TEAM = QZDA7N8H2Y;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = InternDisha/Info.plist;
-				INFOPLIST_KEY_LSApplicationCategoryType = "";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
