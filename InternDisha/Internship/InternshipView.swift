@@ -29,7 +29,7 @@ struct InternshipView: View {
                         } label: {
                             Image(systemName: "line.3.horizontal.decrease.circle")
                         }
-                        .accessibilityLabel("Filter")
+                        .accessibilityLabel(String(localized: "Filter"))
                     }
                 }
         }
@@ -67,9 +67,9 @@ struct InternshipView: View {
                 SearchField(text: $viewModel.searchText)
                 
                 // Segmented Control
-                Picker("View Mode", selection: $selectedSegment) {
-                    Text("Recommended").tag(0)
-                    Text("Overall").tag(1)
+                Picker(String(localized: "View Mode"), selection: $selectedSegment) {
+                    Text(String(localized: "Recommended")).tag(0)
+                    Text(String(localized: "Overall")).tag(1)
                 }
                 .pickerStyle(.segmented)
                 .padding(.vertical, 8)
@@ -103,9 +103,9 @@ struct InternshipView: View {
 
     private var helloTitle: String {
         if let user = userRepository.loadCurrentUser() {
-            return "Hello, \(user.firstName)"
+            return String(localized: "Hello, \(user.firstName)")
         }
-        return "Hello"
+        return String(localized: "Hello")
     }
 
 
@@ -127,7 +127,7 @@ private struct SearchField: View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.secondary)
-            TextField("Search internships…", text: $text)
+            TextField(String(localized: "Search internships…"), text: $text)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .submitLabel(.search)

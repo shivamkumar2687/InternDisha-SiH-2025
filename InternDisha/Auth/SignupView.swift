@@ -40,12 +40,12 @@ struct SignupView: View {
                 VStack(spacing: 0) {
                     // Header Section
                     VStack(spacing: 8) {
-                        Text("Create Account")
+                        Text(String(localized: "Create Account"))
                             .font(.largeTitle)
                             .fontWeight(.bold)
                             .multilineTextAlignment(.center)
                         
-                        Text("Join InternDisha and start your journey")
+                        Text(String(localized: "Join InternDisha and start your journey"))
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
@@ -56,7 +56,7 @@ struct SignupView: View {
                             .scaleEffect(x: 1, y: 2, anchor: .center)
                             .padding(.top, 16)
                         
-                        Text("Step \(currentStep) of \(totalSteps)")
+                        Text(String(localized: "Step %d of %d")).accessibilityLabel("Step \(currentStep) of \(totalSteps)")
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .padding(.top, 4)
@@ -129,7 +129,7 @@ struct SignupView: View {
                                         currentStep -= 1
                                     }
                                 } label: {
-                                    Text("Back")
+                                    Text(String(localized: "Back"))
                                         .font(.headline)
                                         .fontWeight(.semibold)
                                         .foregroundColor(.accentColor)
@@ -150,7 +150,7 @@ struct SignupView: View {
                                     handleCreateAccount()
                                 }
                             } label: {
-                                Text(currentStep == totalSteps ? "Create Account" : "Next")
+                                Text(currentStep == totalSteps ? String(localized: "Create Account") : String(localized: "Next"))
                                     .font(.headline)
                                     .fontWeight(.semibold)
                                     .foregroundColor(.white)
@@ -164,11 +164,11 @@ struct SignupView: View {
                         }
                         
                         HStack(spacing: 4) {
-                            Text("Already have an account?")
+                            Text(String(localized: "Already have an account?"))
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                             
-                            Button("Sign In") {
+                            Button(String(localized: "Sign In")) {
                                 onSignedIn()
                             }
                             .font(.subheadline)
@@ -301,7 +301,7 @@ struct SectionHeader: View {
     let title: String
     
     var body: some View {
-        Text(title)
+        Text(LocalizedStringKey(title))
             .font(.headline)
             .fontWeight(.semibold)
             .foregroundColor(.primary)
@@ -316,12 +316,12 @@ struct CustomTextField: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title)
+            Text(LocalizedStringKey(title))
                 .font(.subheadline)
                 .fontWeight(.medium)
                 .foregroundColor(.primary)
             
-            TextField(placeholder, text: $text)
+            TextField(LocalizedStringKey(placeholder), text: $text)
                 .textFieldStyle(.plain)
                 .keyboardType(keyboardType)
                 .textInputAutocapitalization(.never)
