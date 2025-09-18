@@ -15,13 +15,41 @@ struct LoginView: View {
 
     enum Field { case email, password }
 
+    let selectedRole: UserRole?
     var onSignupTapped: () -> Void
+    var onBackTapped: () -> Void
 
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
+                // Back Button
+                HStack {
+                    Button(action: onBackTapped) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "chevron.left")
+                            Text("Back")
+                        }
+                        .font(.subheadline)
+                        .foregroundColor(.blue)
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 32)
+                .padding(.top, 20)
+                
                 // Header Section
                 VStack(spacing: 8) {
+                    if let role = selectedRole {
+                        HStack(spacing: 8) {
+                            Image(systemName: role.systemImage)
+                                .foregroundColor(.blue)
+                            Text("Sign in as \(role.displayName)")
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                        }
+                        .padding(.bottom, 4)
+                    }
+                    
                     Text(String(localized: "Welcome Back"))
                         .font(.largeTitle)
                         .fontWeight(.bold)
@@ -32,7 +60,7 @@ struct LoginView: View {
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
                 }
-                .padding(.top, 60)
+                .padding(.top, 20)
                 .padding(.horizontal, 32)
                 .padding(.bottom, 40)
                 
@@ -151,7 +179,7 @@ struct LoginView: View {
 }
 
 #Preview {
-    LoginView(onSignupTapped: {})
+    LoginView(selectedRole: .student, onSignupTapped: {}, onBackTapped: {})
         .environmentObject(AuthViewModel())
         .padding()
 }

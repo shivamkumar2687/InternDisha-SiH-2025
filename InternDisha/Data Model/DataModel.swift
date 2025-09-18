@@ -18,6 +18,24 @@ enum Qualification: String, Codable, CaseIterable {
     case masters = "Masters"
 }
 
+enum UserRole: String, Codable, CaseIterable {
+    case student = "Student"
+    case admin = "Admin"
+    
+    var displayName: String {
+        return self.rawValue
+    }
+    
+    var systemImage: String {
+        switch self {
+        case .student:
+            return "graduationcap"
+        case .admin:
+            return "person.badge.key"
+        }
+    }
+}
+
 struct Skill: Identifiable, Codable, Hashable{
     let id: UUID
     let name: String
@@ -62,12 +80,34 @@ struct User: Identifiable, Codable {
     var email: String
     var password : String?  //optional Change later
     var maxQualification: Qualification
+    var role: UserRole
     
     var skills: [Skill]
     var interestsSector: [Sector]
     var locationPreferences: [Location]
     // Optional fields-of-study to cover non-BTech or varied academic backgrounds
     var fieldsOfStudy: [FieldOfStudy]? = nil
+    
+    // Admin/Company specific fields
+    var companyName: String?
+    var companyWebsite: String?
+    var companyDescription: String?
+    var companySize: CompanySize?
+    var industry: String?
+    var jobTitle: String?
+    var department: String?
+}
+
+enum CompanySize: String, Codable, CaseIterable {
+    case startup = "1-10 employees"
+    case small = "11-50 employees"
+    case medium = "51-200 employees"
+    case large = "201-1000 employees"
+    case enterprise = "1000+ employees"
+    
+    var displayName: String {
+        return self.rawValue
+    }
 }
 
 // MARK: - Company

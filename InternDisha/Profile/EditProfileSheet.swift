@@ -241,10 +241,18 @@ struct EditProfileSheet: View {
             email: initialUser.email,
             password: initialUser.password,
             maxQualification: selectedQualification,
+            role: initialUser.role,
             skills: allSkills.filter { selectedSkills.contains($0.id) },
             interestsSector: interestSectors,
             locationPreferences: allLocations.filter { selectedLocations.contains($0.id) },
-            fieldsOfStudy: initialUser.fieldsOfStudy
+            fieldsOfStudy: initialUser.fieldsOfStudy,
+            companyName: initialUser.companyName,
+            companyWebsite: initialUser.companyWebsite,
+            companyDescription: initialUser.companyDescription,
+            companySize: initialUser.companySize,
+            industry: initialUser.industry,
+            jobTitle: initialUser.jobTitle,
+            department: initialUser.department
         )
         onSave(updated)
         dismiss()
@@ -277,6 +285,7 @@ struct EditProfileSheet: View {
             email: "demo@intern.com",
             password: "password",
             maxQualification: .bachelors,
+            role: .student,
             skills: [],
             interestsSector: SectorDummy.all,
             locationPreferences: LocationDummy.all

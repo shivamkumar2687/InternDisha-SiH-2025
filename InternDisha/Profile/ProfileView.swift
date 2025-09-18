@@ -9,8 +9,9 @@ import SwiftUI
 
 struct ProfileView: View {
     @EnvironmentObject var auth: AuthViewModel
-    @EnvironmentObject var language: LanguageManager
+    @EnvironmentObject var localization: LocalizationController
     @State private var showEdit = false
+    @State private var showLanguageSelection = false
 
     var body: some View {
         Group {
@@ -86,14 +87,24 @@ struct ProfileView: View {
                         }
                     }
 
-                    Section(header: Text(String(localized: "Language"))) {
-                        Picker(String(localized: "App Language"), selection: $language.selectedLanguageCode) {
-                            Text("English").tag("en")
-                            Text("हिन्दी").tag("hi")
-                            Text("தமிழ்").tag("ta")
-                            Text("বাংলা").tag("bn")
+                    Section(header: Text("Language".localized())) {
+                        Button(action: {
+                            showLanguageSelection = true
+                        }) {
+                            HStack {
+                                Text("App Language".localized())
+                                Spacer()
+                                Text(localization.getCurrentLanguage().nativeName)
+                                    .foregroundColor(.secondary)
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
                         }
-                        .pickerStyle(.menu)
+                    }
+                    .sheet(isPresented: $showLanguageSelection) {
+                        LanguageSelectionView()
+                            .environmentObject(localization)
                     }
 
                     Section {
@@ -108,8 +119,8 @@ struct ProfileView: View {
                         }
                     }
                 }
-                .id(language.selectedLanguageCode)
-                .environment(\.locale, language.locale)
+                .id(localization.currentLanguage)
+                .environment(\.locale, Locale(identifier: localization.currentLanguage))
                 .navigationTitle(String(localized: "Profile"))
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
@@ -150,4 +161,6 @@ struct ProfileView: View {
 
 #Preview {
     ProfileView()
+        .environmentObject(AuthViewModel())
+        .environmentObject(LocalizationController())
 }

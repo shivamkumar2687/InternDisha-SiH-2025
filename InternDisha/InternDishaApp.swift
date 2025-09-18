@@ -10,13 +10,19 @@ import SwiftUI
 @main
 struct InternDishaApp: App {
     @StateObject private var auth = AuthViewModel()
-    @StateObject private var language = LanguageManager()
+    @StateObject private var localization = LocalizationController()
+    @State private var needsRefresh = false
+    
     var body: some Scene {
         WindowGroup {
             RootView()
+                .id(needsRefresh)
                 .environmentObject(auth)
-                .environmentObject(language)
-                .environment(\.locale, language.locale)
+                .environmentObject(localization)
+                .onReceive(NotificationCenter.default.publisher(for: Notification.Name("LanguageChanged"), object: nil)) { _ in
+                    // Trigger a UI refresh when language changes
+                    needsRefresh.toggle()
+                }
         }
     }
 }

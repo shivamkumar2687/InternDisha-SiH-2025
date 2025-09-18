@@ -32,6 +32,7 @@ struct SignupView: View {
     @State private var currentStep: Int = 1
     private let totalSteps: Int = 4
 
+    let selectedRole: UserRole?
     var onSignedIn: () -> Void
 
     var body: some View {
@@ -227,9 +228,17 @@ struct SignupView: View {
             email: email,
             password: password,
             maxQualification: qualification,
+            role: selectedRole ?? .student,
             skills: chosenSkills,
             interestsSector: interestSectors,
-            locationPreferences: chosenLocations
+            locationPreferences: chosenLocations,
+            companyName: nil,
+            companyWebsite: nil,
+            companyDescription: nil,
+            companySize: nil,
+            industry: nil,
+            jobTitle: nil,
+            department: nil
         )
 
         auth.signup(newUser: user)
@@ -734,7 +743,7 @@ struct InterestAndLocationStep: View {
 
 #Preview {
     NavigationStack {
-        SignupView(onSignedIn: {})
+        SignupView(selectedRole: .student, onSignedIn: {})
             .environmentObject(AuthViewModel())
     }
 }

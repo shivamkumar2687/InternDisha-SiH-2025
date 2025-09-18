@@ -22,21 +22,45 @@ final class AuthViewModel: ObservableObject {
         self.currentUser = repository.loadCurrentUser()
 
         if users.isEmpty {
-            // Seed with a dummy user for quick login testing, then persist
-            let dummyUser = User(
+            // Seed with dummy users for quick login testing, then persist
+            let dummyStudent = User(
                 id: UUID(),
                 firstName: "Demo",
-                lastName: "User",
+                lastName: "Student",
                 dateOfBirth: Calendar.current.date(byAdding: .year, value: -20, to: Date()) ?? Date(),
                 mobile: "9999999999",
-                email: "demo@intern.com",
+                email: "student@intern.com",
                 password: "password",
                 maxQualification: .bachelors,
+                role: .student,
                 skills: [SkillDummy.all.first].compactMap { $0 },
                 interestsSector: [SectorDummy.all.first].compactMap { $0 },
                 locationPreferences: [LocationDummy.all.first].compactMap { $0 }
             )
-            users = [dummyUser]
+            
+            let dummyAdmin = User(
+                id: UUID(),
+                firstName: "Demo",
+                lastName: "Admin",
+                dateOfBirth: Calendar.current.date(byAdding: .year, value: -25, to: Date()) ?? Date(),
+                mobile: "8888888888",
+                email: "admin@intern.com",
+                password: "password",
+                maxQualification: .masters,
+                role: .admin,
+                skills: [SkillDummy.all.first].compactMap { $0 },
+                interestsSector: [SectorDummy.all.first].compactMap { $0 },
+                locationPreferences: [LocationDummy.all.first].compactMap { $0 },
+                companyName: "TechCorp Solutions",
+                companyWebsite: "https://www.techcorp.com",
+                companyDescription: "Leading technology company specializing in software development and digital solutions.",
+                companySize: .large,
+                industry: "Technology",
+                jobTitle: "HR Manager",
+                department: "Human Resources"
+            )
+            
+            users = [dummyStudent, dummyAdmin]
             repository.saveUsers(users)
         }
     }
@@ -91,6 +115,11 @@ final class AuthViewModel: ObservableObject {
             users[idx] = user
             repository.saveUsers(users)
         }
+    }
+    
+    // Get users by role for admin view
+    func getUsersByRole(_ role: UserRole) -> [User] {
+        return users.filter { $0.role == role }
     }
 }
 
