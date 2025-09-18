@@ -30,12 +30,19 @@ final class InternshipViewModel: ObservableObject {
     
     // MARK: - Config
     struct RecommendationConfig {
+        // Classic rule-based weights
         var weightSkillExact: Int = 3
         var weightSkillRelated: Int = 1
         var weightSector: Int = 5
         var weightEducation: Int = 4
-        var weightLocationExact: Int = 5
+        var weightLocationExact: Int = 4
         var weightLocationState: Int = 2
+        // Novel weighting: cosine similarity of skills/title has higher influence
+        var weightSkillCosine: Int = 20
+        // Penalties
+        var penaltyLocationFar: Int = 6
+        // Novel tweak: grant a synergy boost when both exact skills and cosine are strong
+        var bonusSynergyHighCosineAndExactSkills: Int = 5
         var weightFieldOfStudyExact: Int = 4
         var weightFieldOfStudyRelated: Int = 2
         var relatedSkillsMap: [String: Set<String>] = [
@@ -307,57 +314,155 @@ final class InternshipViewModel: ObservableObject {
 
     // MARK: - Recommendation Scoring
     private func recommendationScore(for internship: Internship, user: User) -> Int {
+        // NOTE: Enhanced scoring combines rule-based matching with comprehensive cosine similarity
+        // across skills, sector, location, and fields of study for better semantic matching
         var score = 0
+        var cosineScores: [String: Double] = [:]
 
-        // Skills: +3 for each exact match, +1 for each related (only if not exact matched)
+        print("🔍 Computing recommendation score for: \(internship.title)")
+        print("👤 User: \(user.firstName) \(user.lastName)")
+
+        // 1. SKILLS MATCHING - Rule-based + Cosine similarity
         let userSkills = user.skills
         let userSkillNames = Set(userSkills.map { normalize($0.name) })
         let requiredSkillNames = internship.requiredSkills.map { normalize($0.name) }
 
+        var exactMatchesCount = 0
+        var relatedMatchesCount = 0
+        
+        // Rule-based skill matching
         for required in requiredSkillNames {
             if userSkillNames.contains(required) {
                 score += recConfig.weightSkillExact
+                exactMatchesCount += 1
+                print("✅ Exact skill match: \(required)")
             } else if hasRelatedSkill(userSkillNames: userSkillNames, requiredSkillName: required) {
                 score += recConfig.weightSkillRelated
+                relatedMatchesCount += 1
+                print("🔗 Related skill match: \(required)")
             }
         }
+        
+        // Cosine similarity for skills
+        let userSkillSentence = user.skills.map { normalize($0.name) }.joined(separator: " ")
+        let requiredSkillSentence = internship.requiredSkills.map { normalize($0.name) }.joined(separator: " ")
+        let skillCosine = cosineSimilarity(between: userSkillSentence, and: requiredSkillSentence)
+        cosineScores["skills"] = skillCosine
+        score += Int(round(skillCosine * Double(recConfig.weightSkillCosine)))
+        print("📊 Skills cosine similarity: \(String(format: "%.3f", skillCosine))")
 
-        // Sector match: +5 if user's interests include the internship sector
-        if user.interestsSector.contains(where: { $0.id == internship.sector.id }) {
-            score += recConfig.weightSector
+        // Apply diminishing returns on related matches beyond 3
+        if relatedMatchesCount > 3 {
+            score -= (relatedMatchesCount - 3)
         }
 
-        // Education: +4 if user qualification >= internship minimum
+        // 2. SECTOR MATCHING - Rule-based + Cosine similarity
+        let sectorMatched = user.interestsSector.contains(where: { $0.id == internship.sector.id })
+        if sectorMatched {
+            score += recConfig.weightSector
+            print("✅ Exact sector match: \(internship.sector.name)")
+        }
+        
+        // Cosine similarity for sector
+        let userSectorSentence = user.interestsSector.map { normalize($0.name) }.joined(separator: " ")
+        let internshipSectorSentence = internship.sector.name
+        let sectorCosine = cosineSimilarity(between: userSectorSentence, and: internshipSectorSentence)
+        cosineScores["sector"] = sectorCosine
+        score += Int(round(sectorCosine * Double(recConfig.weightSector)))
+        print("📊 Sector cosine similarity: \(String(format: "%.3f", sectorCosine))")
+
+        // 3. EDUCATION MATCHING - Rule-based only (qualification levels)
         if let userLevel = qualificationOrder[user.maxQualification], let minLevel = qualificationOrder[internship.minimumQualification], userLevel >= minLevel {
             score += recConfig.weightEducation
+            print("✅ Education qualification match: \(user.maxQualification) >= \(internship.minimumQualification)")
+        } else {
+            print("❌ Education qualification mismatch: \(user.maxQualification) < \(internship.minimumQualification)")
         }
 
-        // Location: +5 exact preferred location match, else +2 if same state
+        // 4. LOCATION MATCHING - Rule-based + Cosine similarity
         let preferred = user.locationPreferences
         let exact = preferred.contains(where: { $0.id == internship.location.id })
+        let sameState = preferred.contains(where: { $0.state.caseInsensitiveCompare(internship.location.state) == .orderedSame })
+        
         if exact {
             score += recConfig.weightLocationExact
-        } else if preferred.contains(where: { $0.state.caseInsensitiveCompare(internship.location.state) == .orderedSame }) {
+            print("✅ Exact location match: \(internship.location.city ?? internship.location.district)")
+        } else if sameState {
             score += recConfig.weightLocationState
+            print("🔗 Same state location match: \(internship.location.state)")
+        } else {
+            score -= recConfig.penaltyLocationFar
+            print("❌ Location mismatch: \(internship.location.state)")
         }
+        
+        // Cosine similarity for location
+        let userLocationSentence = user.locationPreferences.map { 
+            "\(normalize($0.city ?? $0.district)) \(normalize($0.state))" 
+        }.joined(separator: " ")
+        let internshipLocationSentence = "\(normalize(internship.location.city ?? internship.location.district)) \(normalize(internship.location.state))"
+        let locationCosine = cosineSimilarity(between: userLocationSentence, and: internshipLocationSentence)
+        cosineScores["location"] = locationCosine
+        score += Int(round(locationCosine * Double(recConfig.weightLocationState)))
+        print("📊 Location cosine similarity: \(String(format: "%.3f", locationCosine))")
 
-        // Fields of Study: exact or related
+        // 5. FIELDS OF STUDY MATCHING - Rule-based + Cosine similarity
         if let userFields = user.fieldsOfStudy, let acceptedFields = internship.acceptedFieldsOfStudy {
             let userFieldNames = Set(userFields.map { normalize($0.name) })
             let acceptedNames = acceptedFields.map { normalize($0.name) }
-            var matched = false
+            var fieldMatched = false
+            
             for requiredField in acceptedNames {
                 if userFieldNames.contains(requiredField) {
                     score += recConfig.weightFieldOfStudyExact
-                    matched = true
+                    fieldMatched = true
+                    print("✅ Exact field of study match: \(requiredField)")
                 } else if hasRelatedField(userFieldNames: userFieldNames, requiredFieldName: requiredField) {
                     score += recConfig.weightFieldOfStudyRelated
-                    matched = true
+                    fieldMatched = true
+                    print("🔗 Related field of study match: \(requiredField)")
                 }
             }
-            // 'matched' is not used further; retained for readability if needed later
-            _ = matched
+            
+            // Cosine similarity for fields of study
+            let userFieldSentence = userFields.map { normalize($0.name) }.joined(separator: " ")
+            let internshipFieldSentence = acceptedFields.map { normalize($0.name) }.joined(separator: " ")
+            let fieldCosine = cosineSimilarity(between: userFieldSentence, and: internshipFieldSentence)
+            cosineScores["fields"] = fieldCosine
+            score += Int(round(fieldCosine * Double(recConfig.weightFieldOfStudyRelated)))
+            print("📊 Fields of study cosine similarity: \(String(format: "%.3f", fieldCosine))")
         }
+
+        // 6. OVERALL SEMANTIC MATCHING - Enhanced cosine similarity
+        let userProfileSentence = [
+            user.skills.map { normalize($0.name) }.joined(separator: " "),
+            user.interestsSector.map { normalize($0.name) }.joined(separator: " "),
+            user.locationPreferences.map { normalize($0.city ?? $0.district) }.joined(separator: " "),
+            user.fieldsOfStudy?.map { normalize($0.name) }.joined(separator: " ") ?? ""
+        ].filter { !$0.isEmpty }.joined(separator: " ")
+        
+        let internshipProfileSentence = [
+            internship.title,
+            internship.requiredSkills.map { normalize($0.name) }.joined(separator: " "),
+            internship.sector.name,
+            "\(internship.location.city ?? internship.location.district) \(internship.location.state)",
+            internship.acceptedFieldsOfStudy?.map { normalize($0.name) }.joined(separator: " ") ?? ""
+        ].filter { !$0.isEmpty }.joined(separator: " ")
+        
+        let overallCosine = cosineSimilarity(between: userProfileSentence, and: internshipProfileSentence)
+        cosineScores["overall"] = overallCosine
+        score += Int(round(overallCosine * Double(recConfig.weightSkillCosine)))
+        print("📊 Overall profile cosine similarity: \(String(format: "%.3f", overallCosine))")
+
+        // 7. SYNERGY BONUS - High cosine similarity + good exact matches
+        let avgCosine = cosineScores.values.reduce(0, +) / Double(cosineScores.count)
+        if avgCosine >= 0.6 && exactMatchesCount >= 1 {
+            score += recConfig.bonusSynergyHighCosineAndExactSkills
+            print("🎯 Synergy bonus applied: avg cosine \(String(format: "%.3f", avgCosine)), exact matches: \(exactMatchesCount)")
+        }
+
+        print("📈 Final score: \(score)")
+        print("📊 Cosine scores breakdown: \(cosineScores)")
+        print("---")
 
         return score
     }
@@ -392,6 +497,207 @@ final class InternshipViewModel: ObservableObject {
 
     private func normalize(_ name: String) -> String {
         name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    // MARK: - Local Cosine Similarity (token frequency based)
+    // Rationale: lightweight, offline cosine on token counts. Good enough for ranking; avoids network/
+    // privacy costs. For production, swap with an embeddings service and cache results.
+    private func cosineSimilarity(between lhs: String, and rhs: String) -> Double {
+        let tokensL = tokenize(lhs)
+        let tokensR = tokenize(rhs)
+        if tokensL.isEmpty || tokensR.isEmpty { return 0 }
+        let vocab = Set(tokensL.keys).union(Set(tokensR.keys))
+        var dot: Double = 0
+        var magL: Double = 0
+        var magR: Double = 0
+        for term in vocab {
+            let l = Double(tokensL[term] ?? 0)
+            let r = Double(tokensR[term] ?? 0)
+            dot += l * r
+            magL += l * l
+            magR += r * r
+        }
+        let denom = (magL.squareRoot() * magR.squareRoot())
+        if denom == 0 { return 0 }
+        return max(0, min(1, dot / denom))
+    }
+
+    private func tokenize(_ text: String) -> [String: Int] {
+        var counts: [String: Int] = [:]
+        let separators = CharacterSet.alphanumerics.inverted
+        text.lowercased().components(separatedBy: separators).forEach { token in
+            let t = token.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard t.count > 1 else { return }
+            counts[t, default: 0] += 1
+        }
+        return counts
+    }
+
+    
+
+    // MARK: - Sentence Similarity --Cosine
+    func getSimilarityBatch(_ sourceSentence: String,
+                            _ sentences: [String],
+                            completion: @escaping ([Double]?) -> Void) {
+        
+        print("🚀 Starting sentence similarity batch processing...")
+        print("📝 Source sentence: \(sourceSentence)")
+        print("📝 Target sentences count: \(sentences.count)")
+        for (index, sentence) in sentences.enumerated() {
+            print("   \(index + 1). \(sentence)")
+        }
+        
+        let apiKey = "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" // replace with your Hugging Face token
+        let model = "sentence-transformers/all-MiniLM-L6-v2"
+        
+        guard let url = URL(string: "https://api-inference.huggingface.co/models/\(model)") else {
+            print("❌ Invalid URL for model: \(model)")
+            completion(nil)
+            return
+        }
+        
+        let requestBody: [String: Any] = [
+            "inputs": [
+                "source_sentence": sourceSentence,
+                "sentences": sentences
+            ]
+        ]
+        
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: requestBody) else {
+            print("❌ Error serializing JSON request body")
+            completion(nil)
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.httpBody = jsonData
+        request.timeoutInterval = 30.0
+        
+        print("🌐 Making API request to Hugging Face...")
+        
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    print("❌ Network error:", error.localizedDescription)
+                    completion(nil)
+                    return
+                }
+                
+                if let httpResponse = response as? HTTPURLResponse {
+                    print("📡 HTTP Status Code: \(httpResponse.statusCode)")
+                    if httpResponse.statusCode != 200 {
+                        print("⚠️ Non-200 status code received")
+                    }
+                }
+                
+                guard let data = data else {
+                    print("❌ No data received from API")
+                    completion(nil)
+                    return
+                }
+                
+                let raw = String(data: data, encoding: .utf8) ?? "nil"
+                print("🔍 Raw API Response: \(raw)")
+                
+                // Decode Hugging Face JSON: {"scores": [..]}
+                do {
+                    if let dict = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                        print("📊 Parsed JSON structure: \(dict.keys)")
+                        
+                        if let scores = dict["scores"] as? [Double] {
+                            print("✅ Successfully extracted \(scores.count) similarity scores:")
+                            for (index, score) in scores.enumerated() {
+                                print("   \(index + 1). \(String(format: "%.4f", score))")
+                            }
+                            completion(scores)
+                        } else if let error = dict["error"] as? String {
+                            print("❌ API Error: \(error)")
+                            completion(nil)
+                        } else {
+                            print("⚠️ Unexpected response structure - no 'scores' key found")
+                            print("📋 Available keys: \(dict.keys)")
+                            completion(nil)
+                        }
+                    } else {
+                        print("❌ Failed to parse JSON response")
+                        completion(nil)
+                    }
+                } catch {
+                    print("❌ JSON parse error:", error.localizedDescription)
+                    completion(nil)
+                }
+            }
+        }
+        task.resume()
+    }
+
+    // MARK: - Enhanced Cosine Similarity Demo
+    func demonstrateCosineSimilarity() {
+        print("🧪 Demonstrating Enhanced Cosine Similarity Scoring")
+        print(String(repeating: "=", count: 50))
+        
+        guard let user = userRepository.loadCurrentUser() else {
+            print("❌ No user found for demonstration")
+            return
+        }
+        
+        print("👤 User Profile:")
+        print("   Skills: \(user.skills.map { $0.name }.joined(separator: ", "))")
+        print("   Sectors: \(user.interestsSector.map { $0.name }.joined(separator: ", "))")
+        print("   Locations: \(user.locationPreferences.map { "\($0.city ?? $0.district), \($0.state)" }.joined(separator: "; "))")
+        print("   Fields: \(user.fieldsOfStudy?.map { $0.name }.joined(separator: ", ") ?? "None")")
+        print("   Education: \(user.maxQualification)")
+        print("")
+        
+        // Test with first few internships
+        let testInternships = Array(internships.prefix(3))
+        
+        for internship in testInternships {
+            print("🏢 Testing with: \(internship.title)")
+            print("   Company: \(internship.company.name)")
+            print("   Required Skills: \(internship.requiredSkills.map { $0.name }.joined(separator: ", "))")
+            print("   Sector: \(internship.sector.name)")
+            print("   Location: \(internship.location.city ?? internship.location.district), \(internship.location.state)")
+            print("   Min Education: \(internship.minimumQualification)")
+            print("")
+            
+            // Compute and display detailed scoring
+            let _ = recommendationScore(for: internship, user: user)
+            print("")
+        }
+        
+        print(String(repeating: "=", count: 50))
+        print("✅ Cosine similarity demonstration completed")
+    }
+
+    // MARK: - Batch Similarity Testing
+    func testBatchSimilarity() {
+        print("🧪 Testing Batch Sentence Similarity")
+        print(String(repeating: "=", count: 30))
+        
+        let sourceSentence = "python machine learning data science"
+        let testSentences = [
+            "python programming artificial intelligence",
+            "swift ios development mobile apps",
+            "machine learning data analysis statistics",
+            "ui ux design user interface",
+            "sql database management backend"
+        ]
+        
+        getSimilarityBatch(sourceSentence, testSentences) { scores in
+            if let scores = scores {
+                print("✅ Batch similarity test completed successfully!")
+                print("📊 Results:")
+                for (index, score) in scores.enumerated() {
+                    print("   \(testSentences[index]): \(String(format: "%.4f", score))")
+                }
+            } else {
+                print("❌ Batch similarity test failed")
+            }
+        }
     }
 }
 
