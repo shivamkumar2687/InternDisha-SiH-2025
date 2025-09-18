@@ -9,7 +9,6 @@ import SwiftUI
 
 struct ProfileView: View {
     @EnvironmentObject var auth: AuthViewModel
-    @EnvironmentObject var language: LanguageManager
     @State private var showEdit = false
 
     var body: some View {
@@ -37,17 +36,17 @@ struct ProfileView: View {
                         .padding(.vertical, 20)
                     }
                     
-                    Section(header: Text(String(localized: "Personal Information"))) {
-                        HStack { Text(String(localized: "Name")); Spacer(); Text("\(user.firstName) \(user.lastName)").foregroundColor(.secondary) }
-                        HStack { Text(String(localized: "Date of Birth")); Spacer(); Text(formatted(date: user.dateOfBirth)).foregroundColor(.secondary) }
-                        HStack { Text(String(localized: "Mobile")); Spacer(); Text(user.mobile).foregroundColor(.secondary) }
-                        HStack { Text(String(localized: "Email")); Spacer(); Text(user.email).foregroundColor(.secondary) }
-                        HStack { Text(String(localized: "Qualification")); Spacer(); Text(LocalizedStringKey(user.maxQualification.rawValue)).foregroundColor(.secondary) }
+                    Section(header: Text("Personal Information")) {
+                        HStack { Text("Name"); Spacer(); Text("\(user.firstName) \(user.lastName)").foregroundColor(.secondary) }
+                        HStack { Text("Date of Birth"); Spacer(); Text(formatted(date: user.dateOfBirth)).foregroundColor(.secondary) }
+                        HStack { Text("Mobile"); Spacer(); Text(user.mobile).foregroundColor(.secondary) }
+                        HStack { Text("Email"); Spacer(); Text(user.email).foregroundColor(.secondary) }
+                        HStack { Text("Qualification"); Spacer(); Text(user.maxQualification.rawValue).foregroundColor(.secondary) }
                     }
 
-                    Section(header: Text(String(localized: "Skills"))) {
+                    Section(header: Text("Skills")) {
                         if user.skills.isEmpty {
-                            Text(String(localized: "No skills selected")).foregroundColor(.secondary)
+                            Text("No skills selected").foregroundColor(.secondary)
                         } else {
                             ForEach(user.skills) { skill in
                                 Text(skill.name)
@@ -55,9 +54,9 @@ struct ProfileView: View {
                         }
                     }
 
-                    Section(header: Text(String(localized: "Interests"))) {
+                    Section(header: Text("Interests")) {
                         if user.interestsSector.isEmpty {
-                            Text(String(localized: "No interests selected")).foregroundColor(.secondary)
+                            Text("No interests selected").foregroundColor(.secondary)
                         } else {
                             ForEach(user.interestsSector) { sector in
                                 VStack(alignment: .leading, spacing: 4) {
@@ -71,9 +70,9 @@ struct ProfileView: View {
                         }
                     }
 
-                    Section(header: Text(String(localized: "Location Preferences"))) {
+                    Section(header: Text("Location Preferences")) {
                         if user.locationPreferences.isEmpty {
-                            Text(String(localized: "No locations selected")).foregroundColor(.secondary)
+                            Text("No locations selected").foregroundColor(.secondary)
                         } else {
                             ForEach(user.locationPreferences) { loc in
                                 VStack(alignment: .leading, spacing: 2) {
@@ -86,34 +85,22 @@ struct ProfileView: View {
                         }
                     }
 
-                    Section(header: Text(String(localized: "Language"))) {
-                        Picker(String(localized: "App Language"), selection: $language.selectedLanguageCode) {
-                            Text("English").tag("en")
-                            Text("हिन्दी").tag("hi")
-                            Text("தமிழ்").tag("ta")
-                            Text("বাংলা").tag("bn")
-                        }
-                        .pickerStyle(.menu)
-                    }
-
                     Section {
                         Button(role: .destructive) {
                             auth.logout()
                         } label: {
                             HStack {
                                 Spacer()
-                                Text(String(localized: "Logout"))
+                                Text("Logout")
                                 Spacer()
                             }
                         }
                     }
                 }
-                .id(language.selectedLanguageCode)
-                .environment(\.locale, language.locale)
-                .navigationTitle(String(localized: "Profile"))
+                .navigationTitle("Profile")
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button(String(localized: "Edit")) { showEdit = true }
+                        Button("Edit") { showEdit = true }
                     }
                 }
                 .sheet(isPresented: $showEdit) {
@@ -131,8 +118,8 @@ struct ProfileView: View {
                 }
             } else {
                 VStack(spacing: 12) {
-                    Text(String(localized: "Not logged in"))
-                    Text(String(localized: "Please sign in to view your profile."))
+                    Text("Not logged in")
+                    Text("Please sign in to view your profile.")
                         .foregroundColor(.secondary)
                 }
                 .padding()

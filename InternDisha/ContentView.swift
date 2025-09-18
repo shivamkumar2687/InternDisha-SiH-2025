@@ -14,16 +14,16 @@ struct ContentView: View {
             InternshipView()
                 .environmentObject(internshipViewModel)
                 .tabItem{
-                    Label(String(localized: "Internship"), systemImage: "briefcase")
+                    Label("Internship", systemImage: "briefcase")
                 }
             MyInternshipView()
                 .environmentObject(internshipViewModel)
                 .tabItem {
-                    Label(String(localized: "My Internship"), systemImage: "heart")
+                    Label("My Internship", systemImage: "heart")
                 }
             NavigationStack { ProfileView() }
                 .tabItem {
-                    Label(String(localized: "Profile"), systemImage: "person.crop.circle")
+                    Label("Profile", systemImage: "person.crop.circle")
                 }
         }
     }
