@@ -7,8 +7,11 @@
 
 import Foundation
 import Combine
+import SwiftUI
 
 final class InternshipViewModel: ObservableObject {
+    // RMSE Calculation
+    @Published private(set) var userRMSE: Double = 0.0
     // Input
     @Published var searchText: String = ""
     @Published var selectedSkillIds: Set<UUID> = []
@@ -156,6 +159,53 @@ final class InternshipViewModel: ObservableObject {
         load()
         bind()
         loadSavedInternships()
+        calculateRMSEForCurrentUser()
+    }
+    
+    // MARK: - RMSE Calculation
+    func calculateRMSEForCurrentUser() {
+        guard let user = userRepository.loadCurrentUser() else { return }
+        
+        // Calculate RMSE across all internships for this user
+        let rmse = calculateRMSE(for: user)
+        userRMSE = rmse
+        
+        // Print RMSE to console for SIH 2025 presentation
+        print("📊 SIH 2025 METRICS - User: \(user.firstName) \(user.lastName)")
+        print("📊 RMSE Score: \(String(format: "%.4f", rmse))")
+        print("📊 Total internships evaluated: \(internships.count)")
+    }
+    
+    func calculateRMSE(for user: User) -> Double {
+        // Get all internships
+        let allInternships = internships
+        
+        // Skip calculation if no internships
+        if allInternships.isEmpty { return 0.0 }
+        
+        // Calculate predicted vs actual scores for each internship
+        var squaredErrors: [Double] = []
+        
+        for internship in allInternships {
+            // Get normalized recommendation score (0-100)
+            let recommendedScore = Double(recommendationScore(for: internship, user: user))
+            
+            // Calculate "actual" score based on match breakdown (this is our ground truth)
+            // We're using the match breakdown as our "actual" value since we don't have user ratings
+            let matchBreakdown = computeMatchBreakdown(for: internship)
+            let actualScore = Double(matchBreakdown?.overallPercent ?? 0)
+            
+            // Calculate squared error
+            let error = recommendedScore - actualScore
+            let squaredError = error * error
+            squaredErrors.append(squaredError)
+        }
+        
+        // Calculate mean squared error
+        let mse = squaredErrors.reduce(0.0, +) / Double(squaredErrors.count)
+        
+        // Return root mean squared error
+        return sqrt(mse)
     }
 
     func load() {
@@ -175,7 +225,14 @@ final class InternshipViewModel: ObservableObject {
             self.allLocations = Array(Set(InternshipDummy.all.map { $0.location })).sorted { $0.state < $1.state }
             // Re-apply existing filters instead of resetting them
             self.applyFilters()
+            // Recalculate RMSE when data refreshes
+            self.calculateRMSEForCurrentUser()
         }
+    }
+    
+    // Call this method whenever user profile is updated
+    func recalculateRMSEAfterUserUpdate() {
+        calculateRMSEForCurrentUser()
     }
     
     func setViewMode(recommended: Bool) {
