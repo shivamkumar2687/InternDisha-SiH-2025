@@ -2,7 +2,7 @@
 //  InternshipViewModel.swift
 //  InternDisha
 //
-//  Created by AI Assistant on 07/09/25.
+//  Created by Shivam Kumar on 07/09/25.
 //
 
 import Foundation
@@ -604,7 +604,7 @@ final class InternshipViewModel: ObservableObject {
             print("   \(index + 1). \(sentence)")
         }
         
-        let apiKey = "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" // replace with your Hugging Face token
+        let apiKey = "" // replace with your Hugging Face token
         let model = "sentence-transformers/all-MiniLM-L6-v2"
         
         guard let url = URL(string: "https://api-inference.huggingface.co/models/\(model)") else {

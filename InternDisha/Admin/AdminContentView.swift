@@ -2,7 +2,7 @@
 //  AdminContentView.swift
 //  InternDisha
 //
-//  Created by AI Assistant on 17/09/25.
+//  Created by Shivam Kumar on 17/09/25.
 //
 
 import SwiftUI
