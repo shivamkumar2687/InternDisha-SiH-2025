@@ -12,8 +12,8 @@ Thousands of internships are listed on the PM Internship Scheme portal, making i
         Smart India Hackathon 2025 Prequalifier Round.
       </p>
     </td>
-    <td width="40%">
-      <img src="IMAGE_URL" width="220">
+    <td width="50%">
+      <img src="https://github.com/shivamkumar2687/InternDisha-SiH-2025/blob/main/InternDisha/Assets.xcassets/Sih%20Winner.imageset/Sih%20Winner.jpg?raw=true" width="250">
     </td>
   </tr>
 </table>
